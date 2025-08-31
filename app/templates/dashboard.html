@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Project15CTI Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body class="bg-dark text-light">
+    <div class="container py-5">
+        <h1 class="mb-4 text-center">🛡️ Project15CTI Threat Intelligence Dashboard</h1>
+
+        <form id="lookupForm" class="mb-4">
+            <div class="input-group">
+                <input type="text" id="queryInput" class="form-control" placeholder="Enter IP or Domain" required>
+                <button type="submit" class="btn btn-warning">Lookup</button>
+            </div>
+        </form>
+
+        <div id="result" class="mb-4"></div>
+        <div id="chart"></div>
+    </div>
+
+    <script>
+        document.getElementById("lookupForm").addEventListener("submit", async function(e) {
+            e.preventDefault();
+            const query = document.getElementById("queryInput").value;
+            const res = await fetch("/lookup", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ query })
+            });
+            const data = await res.json();
+
+            document.getElementById("result").innerHTML = `
+                <h4>Threat Level: <span class="badge bg-${data.threat_level === 'Malicious' ? 'danger' : data.threat_level === 'Suspicious' ? 'warning' : 'success'}">${data.threat_level}</span></h4>
+                <p><strong>Tags:</strong> ${data.tags.join(", ")}</p>
+                <p><strong>Sources:</strong> ${data.sources.join(", ")}</p>
+            `;
+
+            Plotly.newPlot("chart", [{
+                x: ["Malicious", "Suspicious", "Clean"],
+                y: [
+                    data.threat_level === "Malicious" ? 1 : 0,
+                    data.threat_level === "Suspicious" ? 1 : 0,
+                    data.threat_level === "Clean" ? 1 : 0
+                ],
+                type: "bar",
+                marker: { color: ["red", "orange", "green"] }
+            }], {
+                title: "Threat Classification",
+                paper_bgcolor: "#212529",
+                font: { color: "#fff" }
+            });
+        });
+    </script>
+</body>
+</html>
